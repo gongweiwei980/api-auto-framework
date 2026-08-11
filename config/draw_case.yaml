@@ -1,0 +1,55 @@
+# 抽奖接口 - 参数校验用例
+# 断言模式：assert code == expected_code AND expected_msg in msg
+
+- name: "缺id"
+  payload: {}
+  expected_code: 1
+  expected_msg: "Id Can not be empty"
+
+- name: "缺drawCount"
+  payload:
+    id: 224
+  expected_code: 1
+  expected_msg: "DrawCount Can not be empty"
+
+- name: "drawCount为0"
+  payload:
+    id: 19
+    drawCount: 0
+  expected_code: 1
+  expected_msg: "DrawCount Can not be empty"
+
+- name: "drawCount为负"
+  payload:
+    id: 19
+    drawCount: -1
+  expected_code: 1
+  expected_msg: "Range is 1 to 200"
+
+- name: "drawCount超上限"
+  payload:
+    id: 19
+    drawCount: 99999
+  expected_code: 1
+  expected_msg: "Range is 1 to 200"
+
+- name: "id为负"
+  payload:
+    id: -1
+    drawCount: 1
+  expected_code: 1
+  expected_msg: "json Unmarshal fail"
+
+- name: "id为字符串"
+  payload:
+    id: abc
+    drawCount: 1
+  expected_code: 1
+  expected_msg: "json Unmarshal fail"
+
+- name: "奖品池无效"
+  payload:
+    id: 224
+    drawCount: 1
+  expected_code: 2
+  expected_msg: "invalid prize pool"
