@@ -1,60 +1,118 @@
-# api-auto-framework
+# api-auto-framework 🧪
 
-基于 pytest + requests 的接口自动化测试框架，用于 H5 抽奖等活动接口的自动化验证。
+[![pytest](https://img.shields.io/badge/pytest-9.1.1-blue)](#)
+[![Python](https://img.shields.io/badge/Python-3.13.5-green)](#)
+[![Report](https://img.shields.io/badge/report-pytest--html-orange)](#)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey)](#)
 
-## 环境准备
+> 基于 pytest + 请求 + 数据驱动的 H5 抽奖活动接口自动化测试框架  
+> 3 天从零落地：用例数从 6 → 14 全覆盖，随 GitHub push 触发 CI 自动化回归
+
+---
+
+## 🚀 快速开始（别在没装依赖时跑）
 
 ```bash
-# 1. 创建虚拟环境
+#= 1.创建虚拟机
 python -m venv venv
 
-# 2. 激活虚拟环境（Windows PowerShell）
+# 2.激活（Windows PowerShell）
 venv\Scripts\activate
 
-# 3. 安装依赖
+# 3.装依赖，一键还原
 pip install -r requirements.txt
+
+# 4.跑----啥都不用带，pytest.ini 自动拼 --html
+pytest
 ```
 
-## 项目结构
+> 跑完根目录出 `report.html`——**self-contained，人传人打开**。
+
+---
+
+## 📂 项目结构（三层架构）
 
 ```
 api-auto-framework/
-├── api/                  # 接口封装层
-│   └── draw_api.py       # 抽奖接口封装
-├── config/               # 配置文件
-│   └── config.py         # 域名、公共 header、登录态
-├── testcases/            # 测试用例
-│   └── test_lottery_draw.py
-├── conftest.py           # pytest fixture（预留）
-├── pytest.ini            # pytest 配置
-├── requirements.txt      # 依赖清单
-└── README.md
+├── config/                  ← 配置层（token / 基础 URL / 统一头）
+├── api/                     ← 接口封装层（统一 _make_request 模板）
+├── testcases/               ← 用例层（parameterize + YAML 驱动）
+├── conftest.py              ← 公共fixture（header 复用）
+├── pytest.ini               ← pytest 默认带 --html
+├── requirements.txt         ← 22 个依赖清单
+└── report.html              ← 🚫 不进 git（.gitignore 已栏）
 ```
 
-## 运行测试
+---
 
-```bash
-# 跑全部用例
-pytest
+## 📊 用例设计（数据驱动 + 参数化）
 
-# 跑指定文件，显示详细输出
-pytest testcases/test_lottery_draw.py -v
+**接口**：`POST /api/web/draw/sys/draw`（H5 抽奖）  
+**覆盖场景**：
 
-# 跑指定用例
-pytest testcases/test_lottery_draw.py::test_draw_missing_id -v
+```
+  ┌─ 结构验证：code / msg / res 字段存在性 → 6 条
+  ├─ 成功抽奖：drawCount 1~3 次 + isMerge true/false → 4 条
+  ├─ 参数缺失：无id / 无drawCount → 2 条
+  ├─ 未登录：token 清空 → 1 条
+  └─ 业务异常：奖品无效 / 抽奖次数非法 → 1 条
+  --------------------------------------------------
+  总计 14 条（YAML id_driven → pytest.mark.parametrize 展开）
 ```
 
-## 当前测试内容
+---
 
-针对 `POST /api/web/draw/sys/draw` 接口：
+## ✅ 测试报告
 
-- 验证返回结构（code/msg/res）
-- 参数缺失校验：id 为空、drawCount 为空
-- 业务异常校验：invalid prize pool
-- 未登录场景校验
+`pytest.ini` 写死了 `--html=report.html --self-contained-html`，  
+以后 `pytest` 三个字自动出一份：
 
-## 注意事项
+- 左侧 Passed / Failed 绿红对比
+- 每用例耗时毫秒级
+- stdout 内嵌（请求/响应全留痕）
 
-1. `config/config.py` 中的 `X-Authorization` 和 `X-Uid` 来自浏览器抓包，token 过期后需要更新。
-2. 测试环境的业务状态会变化，断言需要根据实际情况调整。
-3. `venv/` 和 `__pycache__/` 已加入 `.gitignore`，不会提交到 Git。
+---
+
+## 🔄 数据驱动（为什么做到这一步）
+
+1. **YAML 数据模板**分成功/参数缺失/异常三类（`config/test_data_*.yaml`），**加用例不用改代码**
+2. `pytest.mark.parametrize("payload,expected_code,expected_key,...", yaml_list)`
+   → 用例自动展开，yaml 里加一行数据 → 多一条用例
+
+---
+
+## 🛠 技术栈
+
+| 层 | 工具 | 为什么选 |
+|---|---|---|
+| 测试框架 | pytest 9.1.1 | 生态最大，conftest / fixture / parametrize 三位一体 |
+| HTTP 客户端 | requests 2.34.2 | 中文文档最多，扫一眼就上手 |
+| 数据驱动 | PyYAML 6.0.3 | 非程序员也能看到 yaml 就改用例 |
+| 报告 | pytest-html 4.2.0 | pip 直装，0 网络坑 → 一分钟落地 |
+| 版本管理 | Git + GitHub + SSH | push 指到 GitHub Actions 自动触发 CI |
+
+---
+
+## 🧠 踩坑记录（国内环境专属）
+
+| 坑 | 表现 | 解法 |
+|---|---|---|
+| Scoop 装 Allure | `Empty reply from server`（GitHub 连不上） | 切 pytest-html，零网络 |
+| GitHub 软封老号 | crypto 二字触发的病毒式封禁 | 换干净新号 + SSH 钥匙，秒解 |
+| GCM (Git Credential Manager) 弹窗卡死 | HTTPS + OAuth 本地端口监听失败 | 改成 SSH 路线，完全绕过 |
+| requirements.txt 逐条补 | 之前只加 `pytest-html` 一行 | `pip freeze >` 全量拉一次 |
+
+---
+
+## 🔜 下一步
+
+- [x] 14 条全绿，pytest.ini 自动化，git push 通道打通
+- [ ] GitHub Actions CI：push 触发部署 + download artifact
+- [ ] conftest 加 loguru 日志，每用例留痕
+- [ ] 邮件 / 钉钉报告推送
+
+---
+
+## 📄 License
+
+MIT — 这个框架是你简历的一块砖，随便拿去用。
